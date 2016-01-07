@@ -47,4 +47,15 @@ Temporary Items
 .apdisk
 
 # Personnal ignores
-._*
+*aux
+*log
+*out*
+Rapport*pdf
+*gz
+*toc
+*o
+lex*
+Shell
+*~
+*txt
+*tab*
