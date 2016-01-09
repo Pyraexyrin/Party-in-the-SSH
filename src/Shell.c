@@ -2,6 +2,7 @@
 
 #include "Shell.h"
 #include "Affichage.h"
+#include "Commandes_Internes.h"
 #include "Evaluation.h"
 
 #include <fcntl.h>
@@ -129,7 +130,7 @@ my_yyparse(void)
     {
       char *line = NULL;
       char buffer[1024];
-      snprintf(buffer, 1024, "mini_shell(%d):", status);
+      snprintf(buffer, 1024, "[%d] mini_shell > ", status);
       line = readline(buffer);
       if(line != NULL)
 	{
@@ -214,11 +215,15 @@ my_yyparse(void)
 int
 executer_SIMPLE(Expression * e){
   
-  if (fork() == 0){
-    execvp(e->arguments[0], e->arguments);
-  }
-  else {
-    wait(&status);
+  if (!executer_interne(e, &status)){
+
+    if (fork() == 0){
+      execvp(e->arguments[0], e->arguments);
+    }
+    else {
+      wait(&status);
+    }
+
   }
   
   return status;
@@ -347,7 +352,8 @@ main (int argc, char **argv)
 
   while (1){
     if (my_yyparse () == 0) {  /* L'analyse a abouti */
-      afficher_expr(ExpressionAnalysee);
+      // afficher_expr(ExpressionAnalysee);
+      status = 0; // On réinitialise le statut
       executer_expression(ExpressionAnalysee);
       fflush(stdout);
       expression_free(ExpressionAnalysee);

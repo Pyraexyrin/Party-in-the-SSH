@@ -1,3 +1,4 @@
+
 \chapter[Exemple]{Juste un exemple}
 
 C'est pas mon truc définitif. C'est juste histoire que moi, j'ai une trace à la fin. Je rédigerai tout correctement à la fin.
@@ -82,7 +83,7 @@ Emacs. I'm back. Je ne sais pas pourquoi, mais l'indentation déconne complètem
 \\\\
 Fate exists. And it doesn't like me. Je n'ai plus le code de l'année dernière. En tous cas, pas dans son intégralité. J'ai, pour une raison abscons, une ancienne version du projet. Embêtant. Mais rien de grave. Je peux le refaire.
 \\\\
-Premier problème. Je suis au switch / case principal, qui choisit la routine à appliquer selon le type de noeud. SIMPLE, SEQUENCE, SEQUENCE\_ET et SEQUENCE\_OU ne posent aucun problème. Par contre, BG, une fois appliqué, fait planter la suite du mini-shell. La lecture en entrée n'est pas forcément correcte, l'affichage saute une fois sur deux (un "\escape{n}" qui disparaît)... Drôle de comportement. Je continue avec les redirections, voir si le problème peut affecter d'autres parties, pour éventuellement trouver un lien.
+Premier problème. Je suis au switch / case principal, qui choisit la routine à appliquer selon le type de noeud. SIMPLE, SEQUENCE, SEQUENCE\_ET et SEQUENCE\_OU ne posent aucun problème. Par contre, BG, une fois appliqué, fait planter la suite du mini-shell. La lecture en entrée n'est pas forcément correcte, l'affichage saute une fois sur deux (un "\textbackslash{n}" qui disparaît)... Drôle de comportement. Je continue avec les redirections, voir si le problème peut affecter d'autres parties, pour éventuellement trouver un lien.
 \\\\
 La redirection d'entrée fonctionne partiellement : une fois la commande ayant son entrée redirigée exécutée, le mini-shell se termine.
 \\\\
@@ -91,3 +92,20 @@ JE SAIS D'OÙ VIENNENT CES ERREURS. Encore une erreur stupide. J'oublie les flag
 C'est pas encore ça. La commande pipée s'exécute, mais il semblerait que STDIN ne se restaure pas, comme si le mini-shell attendait encore quelque chose sur son entrée. Mais écrire ne fait rien. C'est étrange, puisque les redirections de STDIN et STDOUT fonctionnent indépendamment. Ici, ce n'est qu'une combinaison des deux. Qu'est-ce qui fait que le processus attende toujours une entrée ? Bien que j'ai une idée. EEEETTTT... C'ÉTAIT BIEN ÇA ! Il suffisait que je ferme le pipe. La deuxième commande attendait que le programme principal, seul processus restant avec le pipe ouvert, écrive. C'est intéressant, car ça montre un aspect des pipes que je ne connaissais pas. Je pensais que, puisque plus aucun processus n'écrira dans le pipe, il était considéré comme inutile, et que le processus à l'autre bout n'attendrait pas. Preuve que je me trompais.
 \\\\
 Argh, j'avais oublié à quel point je n'aime pas le \LaTeX... J'en comprend l'intérêt, mais... Non. J'aime pas ne pas avoir le contrôle absolu de mes fichiers. Anyway.
+\\\\
+\textbf{> Gonna execute'em all !}
+\\\\
+Il est temps de s'occuper des commandes internes. La stratégie ? On va avoir une liste de ces commandes, dans le cas d'une commande SIMPLE, on compare la commande dans l'arbre avec les éléments de notre liste, on récupère son indice et on switch / case. Rien de compliqué. On aura ensuite une fonction par commande. À la fin de notre liste, j'ajoute un NULL pour détecter facilement la fin (tant que non NULL...). D'ailleurs, erreur que j'ai commise, c'est de faire if(strcmp(...)). strcmp retourne 0 en cas d'égalité, et 0... veut dire false. L'habitude qu'un programme retourne 0 en cas de succès, et un code d'erreur sinon. Du coup, forcément, mes commandes internes n'étaient pas bien traitées. Pour les commandes internes, par ailleurs, on ne traitera que les cas les plus standards. Je suppose que l'objectif n'est aps de les coder entièrement (c'est plus long que difficile). Par exemple, pour la commande kill, on ne traitera que le cas "kill <pid1> <pid2>...". Faisons une liste des traitements :
+\\\begin{itemize}
+\item[echo :] afficher les arguments sur la sortie standard ;
+\\\item[date :] en utilisant time() et localtime(), on peut obtenir toutes les informations dont on a besoin, puis l'afficher correctement. Pour l'instant on reste sur un affichage simple, pas d'options comme la commande d'origine. Pour avoir le fuseau horaire, on compare le localtime() avec le gmtime(), et ensuite ce n'est que de la mise en forme ;
+\\\item[exit :] je m'en occupe maintenant, car j'en ai marre de quitter le mini-shell avec un C-c. C'est simplement un exit(0) ;
+\\\item[pwd :] on va utiliser getcwd(NULL, 0) qui a l'avantage d'utiliser malloc, et donc de ne pas avoir de limite de taille de buffer (même si 1024 serait certainement suffisant). Il faut juste qu'on free() ce buffer juste après l'affichage ;
+\\\item[cd :] il semblerait de la fonction chdir() fasse le boulot. Seuls "problèmes" : "cd" seul est équivalent à "cd \textasciitilde", et "cd -" doit revenir en arrière. Oh ! "cd \textasciitilde" renvoie un Syntax error. Bon, pas besoin de le faire du coup, je suppose (on va pas modifier l'analyseur quand même, si ?). Du coup, je suppose de même avec "cd -" (il faudrait juste stocker le buffer donné par pwd, et s'en resservir dans chdir) ;
+\\\item[history :] le programme possède déjà un système d'historique (haut et bas permettent de se déplacer dedans). Toutes les commandes sont donc forcément enregistrées quelque part ; il suffit de les trouver, et de les afficher. L'historique semble être une liste de HIST\_ENTRY, pointeur sur une structure contenant une ligne, qui doit être la commande. On devrait donc utiliser les fonctions history\_get() qui nous renvoie une de ces structures, et where\_history() pour savoir jusqu'où nous devons afficher l'historique (position actuelle). Pour l'affichage, je conserve ce qui se fait avec la commande history habituellement : 5 colonnes pour le nombre, deux espaces, puis la commande. La commande de base s'adapte sûrement à la largeur des nombres, mais ici, il est peu probable qu'on dépasse les 99'999 commandes exécutées ;
+\\\item[hostname :] il existe la fonction gethostname() qui fait le job. On lui donne un buffer de 1024 caractères (qui devraient suffire), et on ajoute, au cas-où, un '\textbackslash{0}' à la fin, car si le nom était trop long et a été tronqué, le '\textbackslash{0}' de fin est tronqué aussi ;
+\\\item[kill :] on a la fonction kill(). Le signal par défaut utilisé est SIGTERM, signal 15. On vérifie que tous les paramètres sont des nombres, puis on applique kill() sur chacun d'eux.
+\\\end{itemize}
+Voilà pour les commandes internes. À ce stade, il nous reste "remote", qui s'annonce quelque peu tiré par les cheveux.
+\\\\
+\textbf{> Get inside of the party !}
