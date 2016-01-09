@@ -20,6 +20,7 @@ static const char* commandes_internes[] = {
   "kill",
   "exit",
   "remote",
+  "majora",
   NULL
 };
 
@@ -37,7 +38,7 @@ static const char* commandes_internes[] = {
 
 // echo : simple affichage des arguments
 
-void
+static void
 interne_echo (Expression * e, int * status) {
   char ** s = e->arguments;
   s++; // Ne pas garder "echo"
@@ -56,7 +57,7 @@ static const char* jours[] = {"dimanche", "lundi", "mardi", "mercredi", "jeudi",
 static const char* mois[] = {"janvier", "février", "mars", "avril", "mai", "juin", "juillet",
 			     "août", "septembre", "octobre", "novembre", "décembre"};
 
-void
+static void
 interne_date (Expression * e, int * status) {
   time_t t;
   time(&t);
@@ -71,7 +72,9 @@ interne_date (Expression * e, int * status) {
   
 }
 
-void
+// cd : chdir() fait tout le travail
+
+static void
 interne_cd (Expression * e, int * status) {
   if (e->arguments[1]==NULL || e->arguments[2]!=NULL){
     *status = 1;
@@ -81,7 +84,9 @@ interne_cd (Expression * e, int * status) {
   chdir(e->arguments[1]);
 }
 
-void
+// pwd : getcwd() fait exactement ce qu'on veut (donne le chemin absolu)
+
+static void
 interne_pwd (Expression * e, int * status) {
   if (e->arguments[1]!=NULL){
     *status = 1;
@@ -98,7 +103,9 @@ interne_pwd (Expression * e, int * status) {
   free(buf);
 }
 
-void
+// history : il faut jouer avec les fonctions de l'interface readline/history.h
+
+static void
 interne_history (Expression * e, int * status) {
   int pos = where_history();
   if (pos<0){
@@ -116,7 +123,9 @@ interne_history (Expression * e, int * status) {
   *status = 0;
 }
 
-void
+// hostname : là encore, gethostname() fait tout le travail
+
+static void
 interne_hostname (Expression * e, int * status) {
   char name[1024];
   gethostname(name, 1024);
@@ -126,7 +135,9 @@ interne_hostname (Expression * e, int * status) {
   *status = 0;
 }
 
-void
+// kill : on doit d'abord vérifier que les paramètres ne sont que des pids (nombres positifs)
+
+static void
 interne_kill (Expression * e, int * status) {
   if (e->arguments[1]==NULL){
     fprintf(stderr, "Erreur : kill prend au moins un pid en paramètre (kill <pid1> <pid2>...).\n");
@@ -153,7 +164,9 @@ interne_kill (Expression * e, int * status) {
   *status = 0;
 }
 
-void
+// exit : la violence pure !
+
+static void
 interne_exit (Expression * e, int * status) {
   exit(0);
 }
@@ -161,12 +174,17 @@ interne_exit (Expression * e, int * status) {
 // Pour le cas "remote", toutes les fonctions lui étant dédiées
 // sont en fin de fichier.
 
-void remote_main (Expression * e, int * status);
+static void remote_main (Expression * e, int * status);
 
-void
+static void
 interne_remote (Expression * e, int * status) {
   remote_main(e, status);
 }
+
+// majora : c'est juste une commande pour le fun. Elle est longue donc à la fin
+
+static void
+interne_majora (Expression * e, int * status);
 
 ////////////////////////////////////
 // INT CHECK_INTERNE(EXPRESSION*) //
@@ -174,7 +192,7 @@ interne_remote (Expression * e, int * status) {
 // Vérifie si une commande est interne (compare la commande de e à la liste) //
 ///////////////////////////////////////////////////////////////////////////////
 
-int
+static int
 check_interne(Expression * e){
   int ind = 0;
   while (commandes_internes[ind]){
@@ -232,6 +250,10 @@ executer_interne(Expression * e, int * status){
   case 8 :
     interne_remote(e, status);
     break;
+
+  case 9 :
+    interne_majora(e, status);
+    break;
     
   default : // Cas "ce n'est pas une commande interne"
     return false;
@@ -248,6 +270,23 @@ executer_interne(Expression * e, int * status){
 // Point d'entrée du traitement de la commande interne remote //
 ////////////////////////////////////////////////////////////////
 
-void
+static void
 remote_main (Expression * e, int * status){
+}
+
+////////////////////////////////////////////
+// VOID INTERNE_MAJORA(EXPRESSION*, INT*) //
+/////////////////////////////////////////////////////////////////////////
+// Affiche une masque de majora coloré (si le terminal est compatible. //
+// S'il ne l'est pas, affiche de la purée.                             //
+/////////////////////////////////////////////////////////////////////////
+
+static void
+interne_majora (Expression * e, int * status) {
+  time_t t;
+  time(&t);
+
+  struct tm ltime = *localtime(&t);
+   
+  fprintf(stdout, "\x1b[01;31m\n\tDAWN OF THE DAY %d\n\t %d hours ellapsed\n\x1b[0m\n", (ltime.tm_yday-9), (24*(ltime.tm_yday-10)+ltime.tm_hour));
 }

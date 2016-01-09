@@ -3,6 +3,6 @@
 
 #include "Shell.h"
 
-extern int evaluer_expr(Expression *e);
+int executer_expression(Expression * e);
 
 #endif

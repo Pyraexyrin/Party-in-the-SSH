@@ -1,5 +1,8 @@
 # PARTY IN THE SSH
 
+Miley Cyrus themed project.
+Majora's Mask themed program.
+
 ## Official lyrics
 
 So I put my hands down
@@ -16,11 +19,17 @@ Yeah, it's a party in the SSH
 ## HOW TO... Compile
 Makefile.
 
+## HOW TO... Execute
+./Termina
+
 ## HOW TO... Party hard
 Alcohol.
 
 ## HOW TO... Miley Cyrus
 You really want to ?
 
+## HOW TO... how to
+How to.
+
 ## HOW TO...
-That way.
+.
