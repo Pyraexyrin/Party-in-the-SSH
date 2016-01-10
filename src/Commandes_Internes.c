@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <readline/history.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 ////////////////////////////////
 // CHAR* COMMANDES_INTERNES[] //
@@ -69,7 +70,9 @@ interne_date (Expression * e, int * status) {
   fprintf(stdout, "%s %d %s %d, %d:%d:%d (UTC+%02d%02d)\n", jours[ltime.tm_wday], ltime.tm_mday, mois[ltime.tm_mon],
 	  ltime.tm_year + 1900, ltime.tm_hour, ltime.tm_min, ltime.tm_sec,
 	  (ltime.tm_hour-gtime.tm_hour), (ltime.tm_min-gtime.tm_min));
-  
+
+  *status=0;
+  // J'avoue, j'ai pas testé les erreurs possibles (localtime ou gmtime renvoie NULL)
 }
 
 // cd : chdir() fait tout le travail
@@ -81,7 +84,12 @@ interne_cd (Expression * e, int * status) {
     fprintf(stderr, "Erreur : cd prend un chemin en paramètre (cd <chemin>).\n");
     return;
   }
-  chdir(e->arguments[1]);
+  if (chdir(e->arguments[1])==-1){
+    fprintf(stderr, "Erreur d'exécution.\n");
+    *status = 1;
+    return;
+  }
+  *status = 0;
 }
 
 // pwd : getcwd() fait exactement ce qu'on veut (donne le chemin absolu)
@@ -95,10 +103,11 @@ interne_pwd (Expression * e, int * status) {
   }
   char* buf = getcwd(NULL, 0);
   if (buf == NULL){
-    *status = 1;
+    *status = 2;
     fprintf(stderr, "Erreur d'exécution.\n");
     return;
   }
+  *status = 0;
   fprintf(stdout, "%s\n", buf);
   free(buf);
 }
@@ -168,6 +177,7 @@ interne_kill (Expression * e, int * status) {
 
 static void
 interne_exit (Expression * e, int * status) {
+  *status = 0;
   exit(0);
 }
 
@@ -181,10 +191,17 @@ interne_remote (Expression * e, int * status) {
   remote_main(e, status);
 }
 
-// majora : c'est juste une commande pour le fun. Elle est longue donc à la fin
+// majora : c'est juste une commande pour le fun. Elle affiche le temps écoulé depuis la date et heure de rendu du projet.
 
 static void
-interne_majora (Expression * e, int * status);
+interne_majora (Expression * e, int * status) {
+  time_t t;
+  time(&t);
+
+  struct tm ltime = *localtime(&t);
+   
+  fprintf(stdout, "\x1b[01;31m\n\tDAWN OF THE DAY %d\n\t %d hours ellapsed\n\x1b[0m\n", (ltime.tm_yday-10), (24*(ltime.tm_yday-11)+ltime.tm_hour));
+}
 
 ////////////////////////////////////
 // INT CHECK_INTERNE(EXPRESSION*) //
@@ -272,21 +289,62 @@ executer_interne(Expression * e, int * status){
 
 static void
 remote_main (Expression * e, int * status){
-}
+  fprintf(stderr,"You entered the Remote Zone.\n");
+  int fd[2];
 
-////////////////////////////////////////////
-// VOID INTERNE_MAJORA(EXPRESSION*, INT*) //
-/////////////////////////////////////////////////////////////////////////
-// Affiche une masque de majora coloré (si le terminal est compatible. //
-// S'il ne l'est pas, affiche de la purée.                             //
-/////////////////////////////////////////////////////////////////////////
+  if (pipe(fd)==-1){
+    fprintf(stderr, "Erreur d'exécution.\n");
+    *status = 1;
+    return;
+  }
+  
+  if (fork() == 0){
+    dup2(fd[0], 0);
+    int rc;
+    char buf[1024];
+    
+    //
+    char* list[] = {"ssh", "adubroca@jaguar.emi.u-bordeaux.fr"};
+    execvp("ssh", list);
+    fprintf(stderr, "Erreur de ssh.\n");
+    //    
 
-static void
-interne_majora (Expression * e, int * status) {
-  time_t t;
-  time(&t);
+    /* LECTURE DE L'ENTRÉE, ET REPRODUCTION SUR LA SORTIE
+    while(rc = read (0, buf, 1024)){
+      write(1, buf, rc);
+    }
+    */
 
-  struct tm ltime = *localtime(&t);
-   
-  fprintf(stdout, "\x1b[01;31m\n\tDAWN OF THE DAY %d\n\t %d hours ellapsed\n\x1b[0m\n", (ltime.tm_yday-9), (24*(ltime.tm_yday-10)+ltime.tm_hour));
+    fprintf(stdout, "Fils fini.\n");
+  }
+  
+  else {
+    FILE* stream = fdopen(fd[1], "w");
+    /*char buf[1024];
+    memset(buf, '\0', 1024);
+    setvbuf(stream, buf, _IONBF, 1024);
+
+    while(read (0, buf, 1024)){
+      fputs(buf, stream);
+      fputs(buf, stdout);
+      memset(buf, '\0', 1024);
+    }
+
+    fprintf(stderr, "Après les fputs.\n");
+    */
+    /* ENVOI DE LA COMMANDE-ARGUMENT DANS LE BUFFER
+    int i = 1;
+    while (e->arguments[i] != NULL){
+      fputs(*(e->arguments + (i++)), stream);
+      fputs(" ", stream);
+    }
+    */
+
+    close(0);
+    while(1){}
+    
+    fprintf(stderr, "You've leaving the Remote Zone.\n");
+    
+  }
+  
 }

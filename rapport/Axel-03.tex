@@ -1,0 +1,31 @@
+\chapter[Évaluation]{Implémenter l'évaluation des commandes}
+Pour nous changer les idées, occupons-nous de traiter et exécuter l'arbre syntaxique généré par yyparse. Compilons et exécutons le code de base, voir ce qu'il fait déjà.
+\\\\
+Wow. Erreur fatale : le fichier readline.h n'existe pas. J'avais oublié que je fais partie de ceux qui n'ont visiblement même pas les librairies standards (du genre, pas de floor ni de sqrt dans mon math.h). J'ai toujours une chance incroyable avec mes OS depuis mon dual-boot (vous avez saisi l'ironie). Il semblerait que ce soit grub qui m'embête. Et ça, c'est du au changement de disque dur... Bordel.
+\\\\
+Erreur suivante : yacc. Il est vrai que je n'en ai jamais eu besoin avant. Plus qu'une erreur : "ne peut trouver -ly". Tout a décidé de m'embêter aujourd'hui. Heureusement que je suis doublant, je sais que -ly est lié à bison. Pas certain que ce soit une information facile à trouver.
+\\\\
+C'est bon, le mini-shell est en route. Je constate avec plaisir que le système d'historique est déjà implémenté. Soyons honnêtes : l'année dernière, c'était la partie la plus difficile du projet. Alterner entre modes raw et cooked du terminal... Je ne sais pas si c'était la bonne solution, mais c'était pas mignon. L'arbre a l'air inchangé par rapport à l'année dernière. Vous savez ce que cela veut dire... Je vais pouvoir reprendre une bonne partie du code précédent. Il était bon, seuls les appels aux fonctions données et éventuellement les valeurs de retours vont changer. Je pourrai aussi revenir sur les redirections et les pipes. Il me semble me souvenir que nous avions des solutions fonctionnelles, mais pas non plus exceptionnelles.
+\\\\
+... Je comprends mieux pourquoi l'arbre est similaire. Le code source est identique (à my\_yyparse et main près). Sans surprise, après tout. La base du sujet est la même. Le seul véritable changement, c'est le traitement des commandes "internes" qui est dans un autre module. Je ne vais pas pour autant simplement copier / coller. Le code précédent n'était pas correctement commenté, chose que je vais changer maintenant.
+\\\\
+Note pour plus tard : J'ai remarqué que la grille d'auto-évaluation faisait référence à des processus zombies. Pour éviter cela, on mettra en place une structure de données (tableau, liste chaînée) contenant les pids de tous les processus qu'on lancera. Quand notre programme se termine, on peut donc savoir quels processus sont toujours actifs, et choisir  quoi faire.
+\\\\
+Hum. Je viens de refaire la fonction d'affichage de l'arbre. J'avais commencé à l'écrire dans Shell.c, puis j'ai voulu la tester (un modèle basique), puis j'ai vu que c'était déjà inclus... J'avais oublié. J'avais en plus fait la remarque plus tôt. Idiot. Du coup, je l'ai pas refaite. Je changerai juste celle déjà donnée, je suis pas fan de l'aspect final. Ou je la referai. Non, je la referai. Je préfère.
+\\\\
+Emacs. I'm back. Je ne sais pas pourquoi, mais l'indentation déconne complètement sous Sublime Text. C'est n'importe quoi. Puisque je ne nécessite aucune fonctionnalité particulière, je risque de finir sous Gedit. Il y a la coloration syntaxique, c'est tout ce dont j'ai besoin.
+\\\\
+Fate exists. And it doesn't like me. Je n'ai plus le code de l'année dernière. En tous cas, pas dans son intégralité. J'ai, pour une raison abscons, une ancienne version du projet. Embêtant. Mais rien de grave. Je peux le refaire.
+\\En fait non, cette ancienne version est vraiment incomplète. Je n'ai qu'une partie du switch / case de la fonction de parcours de l'arbre syntaxique. Je sais pas ce que j'ai fait du reste... Certainement perdu lors d'une mise à niveau, je n'avais pas du sauvegarder mes données. Je suppose. Enfin bref.
+\\\\
+Premier problème. Je suis au switch / case principal, qui choisit la routine à appliquer selon le type de noeud. SIMPLE, SEQUENCE, SEQUENCE\_ET et SEQUENCE\_OU ne posent aucun problème. Par contre, BG, une fois appliqué, fait planter la suite du mini-shell. La lecture en entrée n'est pas forcément correcte, l'affichage saute une fois sur deux (un "\textbackslash{n}" qui disparaît)... Drôle de comportement. Je continue avec les redirections, voir si le problème peut affecter d'autres parties, pour éventuellement trouver un lien.
+\\\\
+La redirection d'entrée fonctionne partiellement : une fois la commande ayant son entrée redirigée exécutée, le mini-shell se termine.
+\\\\
+JE SAIS D'OÙ VIENNENT CES ERREURS. Encore une erreur stupide. J'oublie les flags O\_RDWR / O\_RDONLY / O\_WRONLY. Forcément, les processus n'aiment pas trop. Il ne faut pas non plus que j'oublie de réinitialiser les entrées / sorties à la fin de l'exécution (je dis ça car je viens de me faire avoir). Tout fontionne bien mieux maintenant ! Les bugs étaient bien dûs à ça, et aux redirections. Une petite question demeure. Pour STDERR, dois-je utiliser O\_TRUNC ou O\_APPEND ? Instinctivement, je dirais O\_TRUNC. Mais je n'en suis pas certain. Les exemples que je trouve sur Internet mettent les deux... C'est moche. Well... Let's give it a try.
+\\\\
+C'est pas encore ça. La commande pipée s'exécute, mais il semblerait que STDIN ne se restaure pas, comme si le mini-shell attendait encore quelque chose sur son entrée. Mais écrire ne fait rien. C'est étrange, puisque les redirections de STDIN et STDOUT fonctionnent indépendamment. Ici, ce n'est qu'une combinaison des deux. Qu'est-ce qui fait que le processus attende toujours une entrée ? Bien que j'ai une idée. EEEETTTT... C'ÉTAIT BIEN ÇA ! Il suffisait que je ferme le pipe. La deuxième commande attendait que le programme principal, seul processus restant avec le pipe ouvert, écrive. C'est intéressant, car ça montre un aspect des pipes que je ne connaissais pas. Je pensais que, puisque plus aucun processus n'écrira dans le pipe, il était considéré comme inutile, et que le processus à l'autre bout n'attendrait pas. Preuve que je me trompais.
+\\\\
+Argh, j'avais oublié à quel point je n'aime pas le \LaTeX... J'en comprend l'intérêt, mais... Non. J'aime pas ne pas avoir le contrôle absolu de mes fichiers. Anyway.
+\\\\
+\textbf{> Gonna execute'em all !}

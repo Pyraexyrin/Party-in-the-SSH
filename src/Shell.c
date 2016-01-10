@@ -17,7 +17,8 @@
 extern int yyparse_string(char *);
 
 bool interactive_mode = 1; // par défaut on utilise readline
-int status = 0; // valeur retournée par la dernière commande
+int status = 0;            // valeur retournée par la dernière commande
+static int verbose = 0;    // indique si le programme affiche l'arbe syntaxique avant exécution d'une commande (1 = oui)
 
 ///////////////////////
 // FONCTIONS DONNÉES //
@@ -186,6 +187,9 @@ main (int argc, char **argv)
 
   // faire en sorte qu'interactive_mode = 0 lorsque le shell est distant
 
+  if (argv[1]!=NULL && (strcmp(argv[1], "-v") || strcmp(argv[1], "--verbose")))
+    verbose = 1;
+  
   if (interactive_mode)
     {
       using_history();
@@ -197,7 +201,8 @@ main (int argc, char **argv)
 
   while (1){
     if (my_yyparse () == 0) {  /* L'analyse a abouti */
-      // afficher_expr(ExpressionAnalysee);
+      if (verbose == 1)
+	afficher_expr(ExpressionAnalysee);
       status = 0; // On réinitialise le statut
       executer_expression(ExpressionAnalysee);
       fflush(stdout);
