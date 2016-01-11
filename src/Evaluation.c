@@ -1,9 +1,8 @@
-#include "Shell.h"
+#include <fcntl.h>
+#include <sys/wait.h>
+
 #include "Evaluation.h"
 #include "Commandes_Internes.h"
-
-#include <sys/wait.h>
-#include <fcntl.h>
 
 /*--------------------------------------------------------------------------------------.
 | Lorsque l'analyse de la ligne de commande est effectuée sans erreur. La variable      |

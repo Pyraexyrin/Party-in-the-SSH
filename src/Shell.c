@@ -1,14 +1,13 @@
 /* Construction des arbres représentant des commandes */
 
-#include "Shell.h"
-#include "Affichage.h"
-#include "Commandes_Internes.h"
-#include "Evaluation.h"
-
 #include <stdbool.h>
-#include <stdio.h>
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
+
+#include "Shell.h"
+
+#include "Affichage.h"
+#include "Evaluation.h"
 
 //////////
 // DATA //

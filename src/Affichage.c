@@ -1,23 +1,21 @@
-#include "Shell.h"
-#include "Affichage.h"
-
 #include <stdio.h>
 
+#include "Affichage.h"
 
 char *chaine_type[] = {
-  "VIDE",	         	// Commande vide 
-  "SIMPLE",        		// Commande simple 
-  "SEQUENCE",      		// Séquence (;) 
-  "SEQUENCE_ET",   		// Séquence conditionnelle (&&) 
-  "SEQUENCE_OU",   		// Séquence conditionnelle (||) 
-  "BG",	         		// Tache en arriere plan 
-  "PIPE",	         	// Pipe 
-  "REDIRECTION_I", 		// Redirection entree 
-  "REDIRECTION_O", 		// Redirection sortie standard 
-  "REDIRECTION_A", 		// Redirection sortie standard, mode append 
-  "REDIRECTION_E", 		// Redirection sortie erreur 
-  "REDIRECTION_EO",
-  "SOUS_SHELL"};
+  "<vide>",	                         // Commande vide 
+  "",                                    // Commande simple 
+  "Séquence",      	                 // Séquence (;) 
+  "Si succès",   	                 // Séquence conditionnelle (&&) 
+  "Si échec",  	                         // Séquence conditionnelle (||) 
+  "Arrière-plan",		         // Tache en arriere plan 
+  "Pipe",	       	                 // Pipe 
+  "Entrée standard depuis",	         // Redirection entree 
+  "Sortie standard dans", 	         // Redirection sortie standard 
+  "Sortie standard (concaténation) dans",// Redirection sortie standard, mode append 
+  "Sortie d'erreur dans", 	         // Redirection sortie erreur 
+  "Sorties standard et d'erreur dans",   // Redirection sortie standard et erreur
+  "Sous-shell mystérieux"};              // Mystère...
 
 
 
@@ -35,11 +33,12 @@ void indenter(int indentation, int trait){
       putchar('|');
     else
       putchar(' '); 
-  putchar('+');
+  putchar('|');
   for(int i = 2; i< trait; i++)
     if ( indentation % trait == 0)
       putchar('-');
   putchar('>');
+  putchar(' ');
 }
 
 
@@ -70,7 +69,7 @@ void afficher_exprL(Expression *e, int indentation, int trait)
   case REDIRECTION_E: 	
   case REDIRECTION_EO :
     indenter(indentation,trait);    
-    printf("%s fichier [%s]\n",chaine_type[e->type], e->arguments[0]);
+    printf("%s [%s]\n",chaine_type[e->type], e->arguments[0]);
     afficher_exprL(e->gauche, indentation + trait, trait);
     break;
   case BG:
@@ -93,5 +92,7 @@ void afficher_exprL(Expression *e, int indentation, int trait)
 
 void afficher_expr(Expression *e)
 {
+  printf("\n");
   afficher_exprL(e,4,4);
+  printf("\n");
 }

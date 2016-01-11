@@ -1,9 +1,8 @@
-#include "Commandes_Internes.h"
-#include <time.h>
-#include <unistd.h>
 #include <readline/history.h>
 #include <signal.h>
-#include <sys/wait.h>
+#include <time.h>
+
+#include "Commandes_Internes.h"
 
 ////////////////////////////////
 // CHAR* COMMANDES_INTERNES[] //
@@ -289,7 +288,11 @@ executer_interne(Expression * e, int * status){
 
 static void
 remote_main (Expression * e, int * status){
-  fprintf(stderr,"You entered the Remote Zone.\n");
+  fprintf(stderr,"Sorry, but this command is still in work.\nYou've met with a terrible fate, haven't you ?\n");
+
+  
+
+  /*
   int fd[2];
 
   if (pipe(fd)==-1){
@@ -303,24 +306,23 @@ remote_main (Expression * e, int * status){
     int rc;
     char buf[1024];
     
-    //
+    
     char* list[] = {"ssh", "adubroca@jaguar.emi.u-bordeaux.fr"};
     execvp("ssh", list);
     fprintf(stderr, "Erreur de ssh.\n");
-    //    
+        
 
-    /* LECTURE DE L'ENTRÉE, ET REPRODUCTION SUR LA SORTIE
+    // LECTURE DE L'ENTRÉE, ET REPRODUCTION SUR LA SORTIE
     while(rc = read (0, buf, 1024)){
       write(1, buf, rc);
     }
-    */
 
     fprintf(stdout, "Fils fini.\n");
   }
   
   else {
     FILE* stream = fdopen(fd[1], "w");
-    /*char buf[1024];
+    char buf[1024];
     memset(buf, '\0', 1024);
     setvbuf(stream, buf, _IONBF, 1024);
 
@@ -331,20 +333,21 @@ remote_main (Expression * e, int * status){
     }
 
     fprintf(stderr, "Après les fputs.\n");
-    */
-    /* ENVOI DE LA COMMANDE-ARGUMENT DANS LE BUFFER
+
+    // ENVOI DE LA COMMANDE-ARGUMENT DANS LE BUFFER
     int i = 1;
     while (e->arguments[i] != NULL){
       fputs(*(e->arguments + (i++)), stream);
       fputs(" ", stream);
     }
-    */
 
     close(0);
     while(1){}
     
+    
     fprintf(stderr, "You've leaving the Remote Zone.\n");
     
   }
+  */
   
 }
